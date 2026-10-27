@@ -17,7 +17,7 @@ Turn a spare Windows 11 Home or Pro computer into a VueOn signage player. The vi
 7. **Only after manual login works**, configure Microsoft's official [Sysinternals Autologon](https://learn.microsoft.com/en-us/sysinternals/downloads/autologon): username `VueOnPlayer`, domain = computer name, password = verified player password. Reboot and verify unattended playback.
 8. Press **Alt+F4**; the player should relaunch after the watchdog checks. Test normal reboot and network reconnection.
 
-See **[START-HERE.md](START-HERE.md)** for the printable technician checklist, and **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for diagnostics and limitations.
+**[Read the complete 7-step installation guide](START-HERE.md)** (including download, passwords, pairing, automatic login and final testing). See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for diagnostics and limitations.
 
 ## What this build does and does not do
 
