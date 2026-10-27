@@ -1,0 +1,34 @@
+name: VueOn Windows Player Preview
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-package:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse PowerShell sources and validate constraints
+        shell: powershell
+        run: .\Tests\Validate-Source.ps1
+      - name: Test recovery of damaged file permissions
+        shell: powershell
+        run: .\Tests\Test-Permissions.ps1
+      - name: Package unsigned preview
+        shell: powershell
+        run: |
+          $exclude = @('.git','.github')
+          $include = @(Get-ChildItem -Force | Where-Object { $_.Name -notin $exclude } | Select-Object -ExpandProperty FullName)
+          Compress-Archive -Path $include -DestinationPath 'VueOn-Windows-Player-v0.1.4-preview.zip' -Force
+      - name: Upload test archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: vueon-windows-player-v0.1.4-preview
+          path: VueOn-Windows-Player-v0.1.4-preview.zip
+          retention-days: 30
