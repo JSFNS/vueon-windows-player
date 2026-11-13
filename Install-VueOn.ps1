@@ -1,4 +1,4 @@
-# VueOn Windows Player Provisioner v0.1.5 (fresh Windows Winlogon registry fix)
+# VueOn Windows Player Provisioner v0.1.6 (integrated autologon and branding)
 # Intended for 64-bit Windows 11 Home/Pro using Windows PowerShell 5.1.
 # Must be reviewed and tested on a spare PC before customer deployment.
 #Requires -Version 5.1
@@ -11,7 +11,7 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$script:version = '0.1.5-preview'
+$script:version = '0.1.6-preview'
 $script:playerName = 'VueOnPlayer'
 $script:newPlayerPassword = $null
 $script:adminName = 'VueOnAdmin'
@@ -25,6 +25,9 @@ $script:report = [ordered]@{
     AdminAccount = 'Unverified'
     PlayerAccount = 'Unverified'
     AutoLogon = 'Unverified'
+    DesktopBranding = 'Unverified'
+    LockScreenBranding = 'Unverified'
+    AccountPicture = 'Unverified'
     StartupTask = 'Unverified'
     Pairing = 'Not checked (requires signed-in viewer and playback)'
     Power = 'Unverified'
@@ -106,6 +109,8 @@ function Copy-PlayerFiles {
         'Modules\VueOn.Autologon.psm1',
         'Modules\VueOn.Bios.psm1',
         'Modules\VueOn.Permissions.psm1',
+        'Modules\VueOn.Credentials.psm1',
+        'Modules\VueOn.AutoSetup.psm1',
         'Maintenance\Enter-Maintenance.ps1',
         'Maintenance\Exit-Maintenance.ps1',
         'Maintenance\Get-Status.ps1',
@@ -146,17 +151,36 @@ function Copy-PlayerFiles {
         }
     }
 
-    $wallpaper = Join-Path $script:installDir 'Branding\VueOn-Wallpaper.png'
-    $provided = Join-Path $PSScriptRoot 'Branding\VueOn-Wallpaper.png'
-    if ((Test-Path -LiteralPath $wallpaper -PathType Leaf) -and
-        -not (Test-VueOnFileWritable -Path $wallpaper)) {
-        Repair-VueOnFileAcl -Root $script:installDir -Path $wallpaper
+    # Create reusable VueOn-branded PNGs. Existing custom branded files are kept.
+    # Windows Pro/Home can set the lock screen from Settings but cannot be forced
+    # using the Enterprise-only local GPO setting.
+    Import-Module (Join-Path $script:installDir 'Modules\VueOn.Branding.psm1') -Force -ErrorAction Stop
+    foreach ($asset in @(
+        @{ File = 'VueOn-Wallpaper.png'; Kind = 'Wallpaper' },
+        @{ File = 'VueOn-LockScreen.png'; Kind = 'LockScreen' },
+        @{ File = 'VueOn-Account.png'; Kind = 'Account' }
+    )) {
+        $targetImage = Join-Path (Join-Path $script:installDir 'Branding') $asset.File
+        $customImage = Join-Path (Join-Path $PSScriptRoot 'Branding') $asset.File
+        if ((Test-Path -LiteralPath $targetImage -PathType Leaf) -and
+            -not (Test-VueOnFileWritable -Path $targetImage)) {
+            Repair-VueOnFileAcl -Root $script:installDir -Path $targetImage
+        }
+        if (Test-Path -LiteralPath $customImage -PathType Leaf) {
+            Copy-Item -LiteralPath $customImage -Destination $targetImage -Force -ErrorAction Stop
+        } elseif (-not (Test-Path -LiteralPath $targetImage -PathType Leaf)) {
+            New-VueOnBrandImage -Path $targetImage -Kind $asset.Kind
+        }
     }
-    if (Test-Path -LiteralPath $provided -PathType Leaf) {
-        Copy-Item -LiteralPath $provided -Destination $wallpaper -Force -ErrorAction Stop
-    } elseif (-not (Test-Path -LiteralPath $wallpaper -PathType Leaf)) {
-        Import-Module (Join-Path $script:installDir 'Modules\VueOn.Branding.psm1') -Force
-        New-VueOnBrandImage -Path $wallpaper
+    $script:report.DesktopBranding = 'VueOn wallpaper staged. Applied when VueOnPlayer first signs in.'
+    $script:report.AccountPicture = Join-Path $script:installDir 'Branding\VueOn-Account.png'
+    try {
+        $lockImage = Join-Path $script:installDir 'Branding\VueOn-LockScreen.png'
+        $script:report.LockScreenBranding = Set-VueOnSupportedLockScreen -ImagePath $lockImage
+    } catch {
+        # Login background is optional. A policy restriction must not prevent
+        # the player and Windows account from working.
+        $script:report.LockScreenBranding = 'Image generated; Windows policy could not be set: ' + $_.Exception.Message
     }
 
     # Finish by protecting directories and files using the correct ACEs.
@@ -203,16 +227,40 @@ function Set-UnattendedPower {
     $script:report.Power = 'AC screen/sleep/hibernate idle timeouts disabled (active power plan)'
 }
 function Enable-UnattendedLogin {
-    # First-boot test release: deliberately does NOT enable Windows autologon.
-    # Only configure it in a separate stage, AFTER manually signing in to
-    # VueOnPlayer and verifying the password and full-screen viewer.
-    $script:report.AutoLogon = 'Intentionally deferred: verify manual VueOnPlayer login first'
-    $script:report.Notes += 'Automatic sign-in is disabled in this preview. Configure Microsoft Sysinternals Autologon separately after manually verifying the player account.'
-    # Fresh Windows 11 installations may have no DefaultUserName/AutoAdminLogon.
-    # A missing optional registry value is normal and must not abort provisioning.
-    Import-Module (Join-Path $script:installDir 'Modules\VueOn.Autologon.psm1') -Force -ErrorAction Stop
-    if (Disable-VueOnPreviewAutoLogon -UserName $script:playerName) {
-        $script:report.Notes += 'Existing VueOnPlayer automatic login disabled for manual verification.'
+    # The user must explicitly choose auto login. Never silently store a secret
+    # or use the unverified custom LSA setter from the early previews.
+    if ($SkipAutoLogon) {
+        $script:report.AutoLogon = 'Skipped by operator (-SkipAutoLogon)'
+        return
+    }
+
+    $choice = Read-Host 'Set up automatic Windows sign-in now using the official Microsoft Autologon tool? (Y/N)'
+    if ($choice -notmatch '^(?i:y|yes)$') {
+        $script:report.AutoLogon = 'Deferred by operator'
+        Say 'Auto-login deferred. You can sign in to .\VueOnPlayer manually.'
+        return
+    }
+
+    Say 'Verify the VueOnPlayer Windows password before activating unattended sign-in.'
+    $password = $script:newPlayerPassword
+    if (-not $password) {
+        $password = Read-Host 'Enter the EXISTING VueOnPlayer Windows password' -AsSecureString
+    }
+    try {
+        Import-Module (Join-Path $script:installDir 'Modules\VueOn.AutoSetup.psm1') -Force -ErrorAction Stop
+        $result = Invoke-VueOnAutoLogonWizard -UserName $script:playerName -ComputerName $env:COMPUTERNAME -Password $password
+        $script:report.AutoLogon = $result
+        if ($result -eq 'ConfiguredPendingReboot') {
+            $script:report.PendingRestart = $true
+            Say 'Microsoft Autologon enabled for VueOnPlayer. Validate the next reboot before deploying.'
+        } else {
+            Say ('Automatic login not enabled: ' + $result + '. Windows remains usable for manual sign-in.')
+        }
+    } catch {
+        $script:report.AutoLogon = 'Not configured: ' + $_.Exception.Message
+        Say 'Automatic login setup could not complete. VueOn installation remains available.'
+        Say ('Detail: ' + $_.Exception.Message)
+        $script:report.Notes += 'Use the Microsoft Autologon utility separately after confirming manual login.'
     }
 }
 function Write-Report {
@@ -248,8 +296,15 @@ try {
     $script:report.Notes += 'PC naming deliberately unchanged to avoid invalidating local-account scheduled tasks. Planned for installer v1.0.'
     Write-Report
     Say 'Installation complete. Review deployment-report.json under C:\ProgramData\VueOnPlayer.'
-    Say 'Restart, select Other user, then sign into .\VueOnPlayer MANUALLY with its password.'
-    Say 'Once the player works, configure Microsoft Sysinternals Autologon as a separate verified step.'
+    if ($script:report.AutoLogon -eq 'ConfiguredPendingReboot') {
+        Say 'Restart to test automatic VueOnPlayer login, then pair the screen.'
+    } else {
+        Say 'Restart, select Other user, then sign into .\VueOnPlayer manually with its password.'
+        Say 'Automatic login can be configured later using the official Microsoft utility.'
+    }
+    Say 'VueOn brand artwork is in C:\ProgramData\VueOnPlayer\Branding.'
+    Say 'Windows Pro/Home: choose the staged image in Settings > Personalization > Lock screen.'
+    Say 'The account photo can be selected in Settings > Accounts > Your info.'
     if (-not $MigrateLegacyStartup) {
         Say 'If this is an upgrade of the manual prototype, use -MigrateLegacyStartup to avoid duplicate launch shortcuts.'
     }
