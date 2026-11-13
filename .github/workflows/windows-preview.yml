@@ -36,10 +36,10 @@ jobs:
         run: |
           $exclude = @('.git','.github')
           $include = @(Get-ChildItem -Force | Where-Object { $_.Name -notin $exclude } | Select-Object -ExpandProperty FullName)
-          Compress-Archive -Path $include -DestinationPath 'VueOn-Windows-Player-v0.1.6-preview.zip' -Force
+          Compress-Archive -Path $include -DestinationPath 'VueOn-Windows-Player-v0.1.7-preview.zip' -Force
       - name: Upload test archive
         uses: actions/upload-artifact@v4
         with:
-          name: vueon-windows-player-v0.1.6-preview
-          path: VueOn-Windows-Player-v0.1.6-preview.zip
+          name: vueon-windows-player-v0.1.7-preview
+          path: VueOn-Windows-Player-v0.1.7-preview.zip
           retention-days: 30
