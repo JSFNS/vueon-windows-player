@@ -2,7 +2,6 @@ name: VueOn Windows Player Preview
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -23,15 +22,24 @@ jobs:
       - name: Validate absent Windows login registry values
         shell: powershell
         run: .\Tests\Test-Winlogon.ps1
+      - name: Verify local Windows password authentication
+        shell: powershell
+        run: .\Tests\Test-Credentials.ps1
+      - name: Verify original VueOn branding artwork and fallback generator
+        shell: powershell
+        run: .\Tests\Test-Branding.ps1
+      - name: Verify Microsoft Autologon download and digital signature
+        shell: powershell
+        run: .\Tests\Test-AutoSetup.ps1
       - name: Package unsigned preview
         shell: powershell
         run: |
           $exclude = @('.git','.github')
           $include = @(Get-ChildItem -Force | Where-Object { $_.Name -notin $exclude } | Select-Object -ExpandProperty FullName)
-          Compress-Archive -Path $include -DestinationPath 'VueOn-Windows-Player-v0.1.5-preview.zip' -Force
+          Compress-Archive -Path $include -DestinationPath 'VueOn-Windows-Player-v0.1.6-preview.zip' -Force
       - name: Upload test archive
         uses: actions/upload-artifact@v4
         with:
-          name: vueon-windows-player-v0.1.5-preview
-          path: VueOn-Windows-Player-v0.1.5-preview.zip
+          name: vueon-windows-player-v0.1.6-preview
+          path: VueOn-Windows-Player-v0.1.6-preview.zip
           retention-days: 30

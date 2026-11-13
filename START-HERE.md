@@ -1,122 +1,95 @@
 # VueOn Windows Player: Installation Guide
 
-**For Windows 11 Home or Pro**
+**Windows 11 Home or Pro | v0.1.6 preview (test devices only)**
 
-**Current version:** v0.1.5 (testing release)
+**You do not need ChatGPT or a GitHub account.** This installs VueOn on a spare Windows PC. It does not install Windows itself.
 
-## Step 1: Prepare the computer
+## 1. Prepare Windows
 
-1. Complete the normal Windows 11 setup.
-2. Connect the computer to the internet.
-3. Install any available Windows updates.
-4. Make sure you have access to a Windows administrator account.
+1. Complete Windows 11 setup and connect to the internet.
+2. Install Windows updates.
+3. Make sure you can sign into an existing Windows **administrator** account with its password.
+4. Connect a keyboard, mouse, screen and power cable.
 
-Do not create any VueOn Windows accounts yourself. The installer will do this.
+Do **not** create the VueOn accounts yourself. The installer creates them.
 
-## Step 2: Download VueOn
+## 2. Download VueOn
 
-Open this link on the Windows computer:
+**Download:** https://github.com/JSFNS/vueon-windows-player/archive/refs/heads/main.zip
 
-**https://github.com/JSFNS/vueon-windows-player/archive/refs/heads/main.zip**
+1. Open **Downloads**.
+2. Right-click the ZIP and choose **Extract All**.
+3. Open the extracted folder.
 
-This downloads the latest VueOn Windows Player source package directly from our public GitHub repository.
+## 3. Install VueOn
 
-1. Open your Downloads folder.
-2. Right-click the downloaded ZIP.
-3. Choose **Extract All**.
-4. Open the extracted folder.
+1. Right-click **Install-VueOn.cmd** and select **Run as administrator** (use **Show more options** if needed).
+2. Approve the Windows administrator prompt.
+3. The installer will set up two Windows accounts. Enter and securely save two **different passwords**, each at least 12 characters:
+   - **VueOnAdmin:** maintenance administrator
+   - **VueOnPlayer:** signage player account
+4. Near the end, the installer asks whether to configure **automatic Windows sign-in**.
+   - Choose **Y** to configure it now.
+   - Choose **N** to leave normal manual sign-in in place. You can rerun the installer later.
+5. If you choose **Y**, VueOn verifies the local Windows password **before changing automatic sign-in**. A Microsoft-signed **Autologon** window will appear. Enter:
+   - **Username:** VueOnPlayer
+   - **Domain:** The computer's **device name** (Settings → System → About)
+   - **Password:** The same VueOnPlayer password you created or just entered.
+   - Click **Enable** and close the Microsoft tool.
+6. Wait for **Installation complete**, then review any notices.
 
-> **Dell PCs:** If installation prints "Install Dell Command Configure manually", this is an optional BIOS power-recovery feature. It does not prevent VueOn from running. No BIOS changes are needed for this initial test.
+**Note:** Automatic login is convenient but not a secure kiosk. Someone with physical access to the computer can use the signed-in player session. The password is stored as a protected Windows LSA secret, recoverable by local administrators. Keep machines physically secure and do not reuse passwords between PCs.
 
-> **Retrying an earlier failed installation:** Download the latest ZIP into a fresh folder and run `Install-VueOn.cmd` as administrator. The installer reuses the existing VueOn accounts. Do not reset Windows or delete the existing accounts.
+**If any command fails, stop. Do not reset Windows.** Save the error message for your technician.
 
-## Step 3: Run the installer
+## 4. VueOn backgrounds and sign-in images
 
-1. Find `Install-VueOn.cmd`.
-2. Right-click it.
-3. Choose **Run as administrator**.
-4. Accept the Windows permission prompt.
+The installer includes **official VueOn artwork** (not generic placeholder art) and copies these files into:
 
-The installer will automatically configure the VueOn Player.
+**C:\ProgramData\VueOnPlayer\Branding**
 
-It will ask you to create passwords for two accounts:
+| Image | Filename | What happens |
+|---|---|---|
+| Desktop wallpaper | VueOn-Wallpaper.png | Set automatically on VueOnPlayer's first sign-in |
+| Lock/login-screen background | VueOn-LockScreen.png | Applied automatically on supported Enterprise/Education editions; available for manual selection on Home/Pro |
+| VueOn player account picture | VueOn-Account.png | Ready to select in Windows Settings |
 
-- **VueOnAdmin:** Administrator account used for maintenance.
-- **VueOnPlayer:** Account used to display VueOn.
+**Windows 11 Home / Pro:** Windows does not support forcing the lock/login background with the normal local Group Policy method. To display the VueOn image, sign into VueOnPlayer, open **Settings → Personalization → Lock screen**, select **Picture → Browse photos** and choose the file above. For the account picture, open **Settings → Accounts → Your info → Choose a file** and select **VueOn-Account.png**. These are one-time visual settings.
 
-Use two different passwords, each at least 12 characters long. Save them securely.
+Managed Windows 11 Pro devices can instead use the supported **Intune/Personalization CSP** approach; this preview does not configure MDM automatically.
 
-Wait until the installer confirms it has completed successfully.
+## 5. Restart and pair the screen
 
-**If an error appears, stop and send the error to the VueOn support team. Do not reset the PC.**
+1. Restart Windows.
+2. If you enabled Microsoft Autologon, Windows should sign into **VueOnPlayer** automatically.
+3. If you skipped Autologon, sign in manually using **.\VueOnPlayer** and the player password. Some PCs show a separate **Other user** or **Switch user** option.
+4. Edge should open VueOn full-screen at **https://portal.vueon.app/pair/**.
+5. On another device, open the VueOn administration portal, pair the screen using the displayed code, and assign content.
 
-## Step 4: Restart and sign in
+## 6. Test before use
 
-1. Restart the computer.
-2. On the Windows login screen, select **Other user** or **Switch user**.
-3. Enter these details:
+- [ ] Windows loads the VueOnPlayer desktop, automatically if requested.
+- [ ] VueOn launches in Microsoft Edge without further clicks.
+- [ ] Correct assigned content plays.
+- [ ] The wallpaper shows VueOn branding.
+- [ ] Pairing survives another restart.
+- [ ] Closing the viewer with **Alt+F4** causes it to reopen automatically.
+- [ ] VueOn reconnects after a temporary internet interruption.
+- [ ] The device remains manageable using the retained administrator account.
 
-   **Username:** `.\VueOnPlayer`
+For the final kiosk experience, also verify the physical monitor powers on after an outage. That is a separate, hardware-specific BIOS setting.
 
-   **Password:** The VueOnPlayer password you created.
+## If anything goes wrong
 
-4. Sign in.
+- Keep the original Windows administrator password and the VueOnAdmin password available.
+- If automatic login fails, sign in manually as **.\VueOnPlayer** or use your administrator account; do **not** reset Windows.
+- To configure automatic login again, run the installer as administrator and choose **Y**, or use the official [Microsoft Autologon utility](https://learn.microsoft.com/en-us/sysinternals/downloads/autologon).
+- If the PC says **Install Dell Command Configure manually**, that refers to optional power-failure BIOS recovery. It does not prevent ordinary VueOn playback.
+- Read the deployment report at **C:\ProgramData\VueOnPlayer\deployment-report.json**.
+- Never share passwords in email, screenshots or GitHub issues.
 
-VueOn should launch automatically in Microsoft Edge, full-screen, and display the pairing page.
+**Status:** v0.1.6 is a hardware-testing preview. The complete startup, automatic login and pairing process must be tested on real hardware before production deployment.
 
-## Step 5: Pair the screen
+Website: https://vueon.app
 
-1. On another device, open your VueOn administration portal.
-2. Open the Screens section.
-3. Follow the screen-pairing process using the code displayed on the Windows computer.
-4. Assign your chosen content.
-
-Confirm the correct content appears on the screen.
-
-Sign out of Windows and sign back into VueOnPlayer. Confirm that the screen is still paired.
-
-## Step 6: Enable automatic Windows login
-
-**Only complete this step once manual VueOnPlayer login has worked successfully.**
-
-1. Open Microsoft's official Autologon download page:
-
-   https://learn.microsoft.com/en-us/sysinternals/downloads/autologon
-
-2. Download and extract the utility.
-3. Sign into Windows with an administrator account.
-4. Run `Autologon64.exe` as administrator.
-5. Enter:
-
-   **Username:** `VueOnPlayer`
-
-   **Domain:** Your computer's device name, found under Windows Settings → System → About.
-
-   **Password:** Your verified VueOnPlayer password.
-
-6. Click **Enable**.
-
-## Step 7: Test the finished player
-
-Restart the PC.
-
-Check that:
-
-- [ ] Windows signs into VueOnPlayer automatically.
-- [ ] VueOn opens without needing anyone to click anything.
-- [ ] The screen displays the correct content.
-- [ ] The screen remembers its pairing after another restart.
-- [ ] Pressing Alt+F4 closes VueOn, but the viewer automatically reopens shortly afterwards.
-- [ ] VueOn recovers after temporarily losing and regaining internet access.
-
-## Installation complete
-
-The computer is ready for VueOn testing once all checks have passed.
-
-**Important:** This is currently a test release and is not yet approved for customer production deployment. Automatic power-on following a power cut may require a separate BIOS setting, depending on the PC.
-
-**Support:** Keep a record of the computer's device name and report any errors. Never send account passwords in an email or support ticket.
-
-**Project website:** https://vueon.app
-
-**Public installer:** https://github.com/JSFNS/vueon-windows-player
+Public source: https://github.com/JSFNS/vueon-windows-player

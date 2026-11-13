@@ -101,8 +101,11 @@ function Disable-VueOnAutoLogon {
     [CmdletBinding()]
     param([string]$UserName = 'VueOnPlayer')
     $key = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
-    $current = Get-ItemProperty -Path $key
-    if ($current.DefaultUserName -ine $UserName) { return $false }
+    $current = Get-ItemProperty -Path $key -ErrorAction Stop
+    $user = $current.PSObject.Properties['DefaultUserName']
+    $domain = $current.PSObject.Properties['DefaultDomainName']
+    if ($null -eq $user -or [string]$user.Value -ine $UserName) { return $false }
+    if ($null -ne $domain -and [string]$domain.Value -ine $env:COMPUTERNAME) { return $false }
     New-ItemProperty -Path $key -Name 'AutoAdminLogon' -PropertyType String -Value '0' -Force | Out-Null
     Initialize-VueOnLsaType
     [VueOn.LsaSecret]::DeletePassword()

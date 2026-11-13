@@ -47,24 +47,42 @@ if ($permissions -notmatch [regex]::Escape("'*S-1-5-32-544:F'") -or
 if ($permissions -match "icacls\.exe[^\r\n]*'/grant:r'[^\r\n]*'/T'") {
     throw 'Permissions module may not recursively apply directory ACEs to files.'
 }
-# The automatic sign-in in v0.1.3 failed on Windows 11 Home.
-# Protect first-time provisioning from enabling unverified automatic login.
+# Auto logon is optional, verified before launch, and uses Microsoft's signed GUI.
 $batch = Get-Content -LiteralPath (Join-Path $root 'Install-VueOn.cmd') -Raw
-if ($batch -notmatch '\-SkipAutoLogon' -or $batch -match '\-ConfigureBios|\-EnableAutoLogon') {
-    throw 'The default launch command must avoid BIOS writes and automatic login.'
+if ($batch -match '-SkipAutoLogon|-ConfigureBios' -or $batch -notmatch '-MigrateLegacyStartup') {
+    throw 'Default installation must prompt about auto logon, not skip it or change BIOS.'
 }
-if ($installer -notmatch 'Intentionally deferred: verify manual VueOnPlayer login first') {
-    throw 'Installer must require manual VueOnPlayer sign-in before enabling autologon.'
+if ($installer -notmatch 'Invoke-VueOnAutoLogonWizard' -or
+    $installer -notmatch "Read-Host 'Set up automatic Windows sign-in now") {
+    throw 'Installer must offer validated interactive Microsoft automatic login.'
 }
-# Fresh Windows 11 regression: Winlogon DefaultUserName may not be present.
-if ($installer -match 'Get-ItemPropertyValue\s+-Path\s+\$winlogon\s+-Name\s+''DefaultUserName''') {
-    throw 'Do not call Get-ItemPropertyValue on optional fresh-Windows Winlogon values.'
+if ($installer -match 'Enable-VueOnAutoLogon\s+-UserName') {
+    throw 'Do not call the unverified early-release custom LSA password setter.'
 }
-if ($installer -notmatch 'Disable-VueOnPreviewAutoLogon') {
-    throw 'First-stage install must safely handle missing Winlogon properties.'
+$setup = Get-Content -LiteralPath (Join-Path $root 'Modules\VueOn.AutoSetup.psm1') -Raw
+$credentials = Get-Content -LiteralPath (Join-Path $root 'Modules\VueOn.Credentials.psm1') -Raw
+if ($setup -notmatch 'Get-AuthenticodeSignature' -or
+    $setup -notmatch 'Test-VueOnLocalPassword' -or
+    $setup -notmatch 'Start-Process -FilePath') {
+    throw 'Official Microsoft Autologon must be signature-checked and preceded by password verification.'
 }
-$autologon = Get-Content -LiteralPath (Join-Path $root 'Modules\VueOn.Autologon.psm1') -Raw
-if ($autologon -notmatch "PSObject\.Properties\['DefaultUserName'\]") {
-    throw 'Optional DefaultUserName property should be checked before reading its value.'
+if ($setup -match '(?i)ArgumentList.{0,150}Password' -or
+    $setup -match '(?i)cmd\.exe.*Password') {
+    throw 'Never expose the VueOn password in executable command-line arguments.'
+}
+if ($credentials -notmatch 'LogonUserW' -or
+    $credentials -notmatch 'ZeroFreeGlobalAllocUnicode') {
+    throw 'Windows password validation must use LogonUserW and clear the secret buffer.'
+}
+
+# The package must carry actual, official VueOn artwork for all three targets.
+foreach ($image in @('VueOn-Wallpaper.png','VueOn-LockScreen.png','VueOn-Account.png')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $root ('Branding\' + $image)) -PathType Leaf)) {
+        throw ('Branding image is missing: ' + $image)
+    }
+}
+if ($installer -notmatch 'Set-VueOnSupportedLockScreen' -or
+    $installer -notmatch 'VueOn-Account.png') {
+    throw 'Installer must stage the account and sign-in artwork.'
 }
 Write-Host 'All static checks passed.'

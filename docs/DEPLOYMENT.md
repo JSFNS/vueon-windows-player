@@ -1,76 +1,73 @@
-# VueOn Windows Player - Deployment and acceptance
+# VueOn Windows Player - deployment and acceptance (v0.1.6 preview)
 
-## Preflight
+## Preconditions
 
-- [ ] Confirm the computer will be dedicated to signage and data is backed up.
-- [ ] Windows 11 is activated; Windows Update and Microsoft Defender remain enabled.
-- [ ] Ethernet or Wi-Fi connects to the internet; Edge loads `https://portal.vueon.app/pair/`.
-- [ ] Existing administrator credentials are recorded in an approved FNS secrets manager.
-- [ ] No ordinary end-user data remains accessible to the `VueOnPlayer` account.
-- [ ] Screen and PC are physically secure, with adequate ventilation.
-- [ ] Approved VueOn wallpaper is available (optional; fallback graphic otherwise).
+- [ ] Spare Windows 11 Home or Pro PC, activated and updated
+- [ ] Microsoft Defender and Windows Update enabled
+- [ ] Working internet; Edge loads https://portal.vueon.app/pair/
+- [ ] Known original maintenance administrator password, kept securely
+- [ ] Keyboard, mouse, display and physical security
+- [ ] Two unique strong account passwords for each device
 
-## Install
+## Installer steps
 
-1. Right-click `Install-VueOn.cmd`, select **Run as administrator**.
-2. On an existing VueOn prototype the script migrates VueOn Startup-folder shortcuts into `C:\ProgramData\VueOnPlayer\LegacyStartupBackup` (rather than deleting them).
-3. Use unique passwords per device. If it creates `VueOnPlayer`, remember that password is also used for LSA-based autologon.
-4. Review BIOS report. A missing OEM tool, unsupported setting or supervisor password requires manual firmware configuration.
-5. Restart. Watch the branded desktop appear, followed by Edge app mode and the VueOn pairing screen.
-6. Pair via VueOn; leave scheduled content running.
-7. Restart again and validate retained pairing.
+1. Download a fresh public GitHub ZIP, extract it, and run **Install-VueOn.cmd as administrator**.
+2. Installer creates local VueOnAdmin (administrator) and VueOnPlayer (standard user) if absent. Existing accounts and pairing are preserved.
+3. It stages desktop, lock/login-screen and account-picture images from `Branding/`, then configures Edge, watchdog and no-sleep settings.
+4. If you choose Y for automatic login, Windows verifies the VueOnPlayer password using LogonUser. The Microsoft-signed Autologon utility opens. Enter VueOnPlayer, domain = PC name and the same verified password; click Enable.
+5. Installer checks Winlogon username/domain/flag afterwards. It **cannot verify the password retyped inside Microsoft's GUI**, so reboot remains essential.
+6. If auto login is skipped, sign in manually with `.\VueOnPlayer`.
+7. Pair and assign content via VueOn. Test another reboot.
+
+## Original VueOn artwork
+
+| Path under C:\ProgramData\VueOnPlayer\Branding | Effect |
+|---|---|
+| VueOn-Wallpaper.png | Auto-applied desktop background on first VueOnPlayer login |
+| VueOn-LockScreen.png | Enterprise/Education local lock screen policy if no conflicting policy. Home/Pro: choose in Settings manually or use supported Intune/CSP |
+| VueOn-Account.png | Account picture: select in Settings > Accounts > Your info |
+
+Never use an unsupported Pro local Group Policy registry hack to force the lock/login image.
 
 ## Acceptance tests
 
 | Test | Pass criteria |
-| --- | --- |
-| Cold boot | No operator password; loads VueOn under standard account |
-| Full-screen | VueOn displays without Edge tabs or address bar |
-| Pairing persistence | Same paired screen and content after restart |
-| Crash recovery | Alt+F4; browser reopens during the next five-second watchdog cycle, once the initial 15-second grace has passed |
-| Offline/reconnect | Reconnect network; existing paired content resumes without re-pairing |
-| AC power failure | BIOS and PC restart after AC is restored; TV returns to the right HDMI input |
-| Overnight | 24h uninterrupted run, no dialogs or blank displays |
-| Windows Update | Security updates remain enabled; active hours agreed with client; post-update restart recovers signage |
-| Access control | `VueOnPlayer` cannot elevate; admin access remains available and passwords are unique |
-| Report | `deployment-report.json` exists without passwords; unsupported BIOS reported honestly |
+|---|---|
+| Account | VueOnPlayer exists and is a standard user |
+| Autologon | Cold boot logs into VueOnPlayer without human input (if selected) |
+| Manual recovery | Separate administrator password works |
+| Branding | Desktop displays VueOn; lock/login artwork staged and visually checked |
+| Browser | Edge opens VueOn full screen |
+| Pairing persistence | Correct assigned content survives restart |
+| Watchdog | Alt+F4 causes viewer to relaunch |
+| Offline recovery | Reconnect internet without re-pairing |
+| Overnight | 24 hours without dialogs or blank screen |
+| Security | Defender, updates, account isolation retained |
+| Report | `deployment-report.json` accurate and never contains passwords |
 
-**Watchdog note:** It checks whether the VueOn Edge browser process is running, not whether the VueOn web page is frozen or its content has stalled. Cloud heartbeats/health checks are future work.
+Watchdog checks Edge process activity, not the web page's actual rendering.
 
-## BIOS integration
+## BIOS support
 
-**Dell:** Requires Dell Command Configure `cctk.exe` installed and exposing either `--AcPwrRcvry` or `--acpower`; writes `on` and queries the result. Dell options vary by generation.
+Dell requires Dell Command Configure for optional AC-power recovery; HP and Lenovo likewise need supported official tooling. Normal installation does **not** change BIOS or flash firmware. Manufacturer warnings are advisory.
 
-**HP:** Requires official HP Client Management Script Library already installed and an exact supported `After Power Loss` setting. Passworded firmware and unrecognised settings require manual setup.
+## Troubleshooting / rollback
 
-**Lenovo:** Uses available `root\wmi` classes, requires `AfterPowerLoss`, sets `Power On` and saves. Supervisor-password-protected devices must use an approved manufacturer workflow or manual BIOS setup.
+If automatic login fails, do **not reset Windows**. Use the known administrator account; test manual login using `.\VueOnPlayer` and its actual password, then rerun the installer and choose Y or use the official Microsoft Autologon utility. Device sign-in policies, ActiveSync restrictions or legal notices may prevent automatic login even when Winlogon reports configured.
 
-**Other hardware:** Detect and report. Never attempt generic UEFI writes, firmware flashing or BIOS password bypass.
+A fresh Windows install may lack DefaultUserName/AutoAdminLogon registry values; this is not an installation error.
 
-## Maintenance and rollback
+From elevated PowerShell:
 
-Run elevated, on the console:
-
-```powershell
+~~~powershell
 & 'C:\ProgramData\VueOnPlayer\Maintenance\Enter-Maintenance.ps1'
-# Finish work; use Alt+F4 to close Edge if necessary.
 & 'C:\ProgramData\VueOnPlayer\Maintenance\Exit-Maintenance.ps1'
-```
-
-To disable the deployed player without deleting pairing:
-
-```powershell
+& 'C:\ProgramData\VueOnPlayer\Maintenance\Get-Status.ps1'
 & 'C:\ProgramData\VueOnPlayer\Maintenance\Uninstall-VueOn.ps1'
-```
+~~~
 
-Uninstall intentionally keeps accounts, branding files, logs and Edge profile. Sign out/reboot to end a running session. If reinstalling, the profile is reused. Manual recovery: hold **Shift** during autologon to use a different Windows account (depending on Windows logon behaviour), or use the existing local admin account from the sign-in screen.
+Uninstall disables the VueOn startup task and VueOn-owned automatic login where possible. It preserves Windows local accounts, branding assets, browser pairing and logs.
 
-## Not yet production-ready
+## Preview limitations
 
-- Windows-native hardware validation and long-run reliability testing.
-- Signed installer / verified release supply chain.
-- Chrome/Edge multi-process false-positive handling and actual VueOn playback heartbeat.
-- Full OEM model/password matrix, including BIOS AC power restore testing.
-- First-run Windows deployment, device naming and unattended Wi-Fi provisioning.
-- Supportability, secure remote diagnostics and maintenance windows.
-- Customer security review and physical-access controls for Windows Home.
+Needs full on-device boot/autologon/branding/TV pairing testing, signed distribution, robust browser heartbeat, hardware power recovery checks, and business security review before production.
