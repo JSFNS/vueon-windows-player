@@ -1,40 +1,45 @@
 # VueOn Windows Player
 
-**Public preview v0.1.5 for TEST PCs only. Not approved for customer production deployment.** Fresh Windows 11 Pro/ Home installations with missing Winlogon username values are supported; automatic Windows login remains a separate, manually validated step.
+**Public preview v0.1.6 for spare Windows 11 Home / Pro test PCs only. Not approved for production rollout.**
 
-Turn a spare Windows 11 Home or Pro computer into a VueOn signage player. The viewer starts Microsoft Edge full-screen at `https://portal.vueon.app/pair/`, remembers its pairing in a persistent browser profile, applies a VueOn loading wallpaper and checks every five seconds whether the viewer needs relaunching.
+Turn a Windows 11 PC into a VueOn signage player. The installer creates a dedicated standard user, installs the Edge viewer/watchdog, stages the **official VueOn artwork**, and **offers automatic Windows sign-in** using Microsoft's signed Sysinternals Autologon tool.
 
-**The first-stage installer does not enable automatic Windows login.** This is deliberate: a previous preview failed at the Windows sign-in screen. Prove that the `VueOnPlayer` account signs in manually before configuring unattended startup.
+## Get started
 
-## Download and test without a GitHub account
+1. **[Download the latest public ZIP](https://github.com/JSFNS/vueon-windows-player/archive/refs/heads/main.zip)**. GitHub sign-in is not required.
+2. Extract the ZIP, then right-click **Install-VueOn.cmd → Run as administrator**.
+3. Create distinct passwords for **VueOnAdmin** and **VueOnPlayer**.
+4. When asked, choose **Y** to configure automatic login or **N** to skip. If Y, the installer verifies the Windows password, then opens the *Microsoft Autologon* dialog. Enter VueOnPlayer, this PC's name, and the verified password; click **Enable**.
+5. Restart. VueOn should open in Edge full screen at **https://portal.vueon.app/pair/**. Pair and test another reboot.
 
-1. Select the green **Code** button on this page, then **Download ZIP**.
-2. Extract the ZIP on a spare Windows 11 PC that has finished its initial setup and is connected to the internet.
-3. Open the extracted folder. Right-click **Install-VueOn.cmd** and choose **Run as administrator**.
-4. Enter and securely save **two distinct passwords** when prompted: `VueOnAdmin` and `VueOnPlayer`.
-5. If the installer reports success, restart Windows. Select **Other user**, sign into `.\VueOnPlayer` and verify VueOn opens.
-6. Pair the screen through the VueOn portal, sign out and back in and verify it is still paired.
-7. **Only after manual login works**, configure Microsoft's official [Sysinternals Autologon](https://learn.microsoft.com/en-us/sysinternals/downloads/autologon): username `VueOnPlayer`, domain = computer name, password = verified player password. Reboot and verify unattended playback.
-8. Press **Alt+F4**; the player should relaunch after the watchdog checks. Test normal reboot and network reconnection.
+**[Read the complete step-by-step installation guide](START-HERE.md)**, including Windows Home/Pro sign-in artwork limitations and troubleshooting.
 
-**[Read the complete 7-step installation guide](START-HERE.md)** (including download, passwords, pairing, automatic login and final testing). See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for diagnostics and limitations.
+## Branding included
 
-## What this build does and does not do
+The downloadable ZIP includes original VueOn imagery:
 
-- Provisions local Windows accounts, VueOn branding, power settings, Edge viewer and a scheduled watchdog.
-- Uses a persistent Edge profile. It does **not** run in InPrivate mode.
-- Includes manufacturer-specific firmware-setting diagnostics, but **does not change BIOS or flash firmware by default**.
-- Does **not** change Windows Defender, disable security updates or configure unattended sign-in automatically.
-- Is **not a secure locked-down kiosk** on Windows Home; physically protect test devices.
+- **Branding/VueOn-Wallpaper.png** → desktop wallpaper (automatically applied under VueOnPlayer).
+- **Branding/VueOn-LockScreen.png** → branded Windows lock/sign-in background (automatically configured with a supported Enterprise/Education local policy; choose the image manually under Windows 11 Home/Pro, or deploy through Intune/CSP).
+- **Branding/VueOn-Account.png** → original VueOn icon for the player's Windows account photo (select in **Settings → Accounts → Your info**).
 
-Windows itself must first be installed and connected to a network. For real deployments, also verify Windows activation, monitor auto-power, power-outage recovery and support arrangements.
+Files are copied to **C:\ProgramData\VueOnPlayer\Branding**. Existing custom artwork can be supplied in the package's `Branding/` folder and will be used instead of generated placeholder assets.
 
-**Dell BIOS notice:** `Install Dell Command Configure manually` is advisory for optional recovery after power loss. It does not block normal VueOn playback.
+## Security and limitations
 
-## Development status
+- User credentials are checked locally using Windows **LogonUser** before autologon can be enabled.
+- The optional Microsoft tool is downloaded from the official Sysinternals site and its **Microsoft Authenticode signature is verified** before opening. The installer does **not** pass passwords in command-line arguments, write them into logs, or commit them to GitHub.
+- Automatic login is **optional**; a manual sign-in remains available. Microsoft's LSA-protected password is still recoverable by a local administrator.
+- Dedicated VueOnPlayer account is **not an administrator**. Keep a separate admin account for maintenance, use a unique password per device, and protect against physical access.
+- Windows 11 Home/Pro cannot force a default lock-screen picture through the local **Enterprise/Education** Group Policy mechanism; unmanaged devices must choose the staged picture in Windows Settings. Intune/Personalization CSP is a separate supported option for managed Pro.
+- Existing Windows 11 installation, working internet and Edge are prerequisites. BIOS power-on-after-outage changes are *not* performed by default. Windows Defender and Windows Update remain enabled.
+- This is an unsigned preview, **not a hardened Windows kiosk**. A completed automatic login still requires a real-device reboot test.
 
-This is an **unsigned, hardware-testing preview**. GitHub Actions parsing and isolated permission-recovery tests are useful checks, but are not substitutes for a successful fresh-PC reboot, logon, pairing and watchdog test. Report failures with the exact error, **without sharing passwords**.
+**Dell notice:** "Install Dell Command Configure manually" is for optional AC-power recovery and is not a normal-installation failure.
 
-**Download source:** [Code → Download ZIP](https://github.com/JSFNS/vueon-windows-player/archive/refs/heads/main.zip).
+## More documentation
 
-No commercial production release has been approved.
+- **[Installation guide](START-HERE.md)**
+- **[Deployment checks and recovery](docs/DEPLOYMENT.md)**
+- **[Microsoft Autologon documentation](https://learn.microsoft.com/en-us/sysinternals/downloads/autologon)**
+
+The CI build checks PowerShell syntax, ACL recovery, official image assets, local password verification, and the downloaded Microsoft Autologon signature. These tests cannot prove a particular physical PC will boot and pair correctly. Verify on spare hardware before any customer deployment.
