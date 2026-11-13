@@ -28,32 +28,30 @@ function Write-VueOnLog([string]$Message) {
     } catch { }
 }
 
-function Set-VueOnUserBranding {
+function Update-VueOnUserBranding {
+    # Windows can reset the desktop theme while Explorer initializes. Only
+    # apply once the interactive desktop shell is running and keep checking.
+    if (-not (Get-Process -Name 'explorer' -ErrorAction SilentlyContinue)) {
+        return $false
+    }
     $source = Join-Path $installRoot 'Branding\VueOn-Wallpaper.png'
-    if (-not (Test-Path -LiteralPath $source)) { Write-VueOnLog 'Branding asset missing.'; return }
-    $destDir = Join-Path $localRoot 'Branding'
-    New-Item -Path $destDir -ItemType Directory -Force | Out-Null
-    $dest = Join-Path $destDir 'VueOn-Wallpaper.png'
-    Copy-Item -LiteralPath $source -Destination $dest -Force
-    $desktopKey = 'HKCU:\Control Panel\Desktop'
-    Set-ItemProperty -Path $desktopKey -Name 'WallpaperStyle' -Value '10'
-    Set-ItemProperty -Path $desktopKey -Name 'TileWallpaper' -Value '0'
-    Set-ItemProperty -Path $desktopKey -Name 'ScreenSaveActive' -Value '0'
-    $advanced = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
-    New-Item -Path $advanced -Force | Out-Null
-    New-ItemProperty -Path $advanced -Name 'HideIcons' -PropertyType DWord -Value 1 -Force | Out-Null
-    if (-not ('VueOnWallpaperApi' -as [type])) {
-        Add-Type -TypeDefinition @'
-using System.Runtime.InteropServices;
-public static class VueOnWallpaperApi {
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    public static extern bool SystemParametersInfo(uint action, uint parameter, string value, uint flags);
-}
-'@
+    $module = Join-Path $installRoot 'Modules\VueOn.Desktop.psm1'
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        Write-VueOnLog 'VueOn wallpaper asset missing; the viewer will continue.'
+        return $false
     }
-    if (-not [VueOnWallpaperApi]::SystemParametersInfo(20, 0, $dest, 3)) {
-        Write-VueOnLog 'Wallpaper update failed; desktop remains usable.'
+    if (-not (Test-Path -LiteralPath $module -PathType Leaf)) {
+        Write-VueOnLog 'VueOn desktop branding module missing; the viewer will continue.'
+        return $false
     }
+    Import-Module $module -Force -ErrorAction Stop
+    $dest = Join-Path $localRoot 'Branding\VueOn-Wallpaper.png'
+    if (Test-VueOnDesktopWallpaper -DestinationImagePath $dest) {
+        return $true
+    }
+    $null = Set-VueOnDesktopWallpaper -SourceImagePath $source -DestinationImagePath $dest
+    Write-VueOnLog ('Wallpaper applied and verified for VueOnPlayer: ' + $dest)
+    return $true
 }
 
 function Get-VueOnEdgePath {
@@ -91,13 +89,22 @@ try {
         Write-VueOnLog ('Unexpected user: ' + $env:USERNAME)
         exit 1
     }
-    try { Set-VueOnUserBranding } catch { Write-VueOnLog ('Branding issue: ' + $_.Exception.Message) }
+    # Open the viewer independently. Wallpaper failure must never block signage.
     try { Start-VueOnBrowser } catch { Write-VueOnLog ('Initial launch issue: ' + $_.Exception.Message) }
+    $lastBrandingCheck = [datetime]::MinValue
     Start-Sleep -Seconds $startDelaySeconds
     while ($true) {
         try {
             if (-not (Test-Path -LiteralPath $maintenance)) { Start-VueOnBrowser }
         } catch { Write-VueOnLog ('Watchdog error: ' + $_.Exception.Message) }
+
+        # Reapply only if the current user's wallpaper is missing or changed.
+        # Retries naturally cover Explorer starting after the scheduled task.
+        if (((Get-Date) - $lastBrandingCheck).TotalSeconds -ge 30) {
+            $lastBrandingCheck = Get-Date
+            try { $null = Update-VueOnUserBranding }
+            catch { Write-VueOnLog ('Wallpaper setup will retry: ' + $_.Exception.Message) }
+        }
         Start-Sleep -Seconds $checkIntervalSeconds
     }
 } finally {
