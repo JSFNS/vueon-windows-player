@@ -2,7 +2,7 @@
 
 **For Windows 11 Home or Pro**
 
-**Current version:** v0.1.4 (testing release)
+**Current version:** v0.1.5 (testing release)
 
 ## Step 1: Prepare the computer
 
@@ -25,6 +25,10 @@ This downloads the latest VueOn Windows Player source package directly from our 
 2. Right-click the downloaded ZIP.
 3. Choose **Extract All**.
 4. Open the extracted folder.
+
+> **Dell PCs:** If installation prints "Install Dell Command Configure manually", this is an optional BIOS power-recovery feature. It does not prevent VueOn from running. No BIOS changes are needed for this initial test.
+
+> **Retrying an earlier failed installation:** Download the latest ZIP into a fresh folder and run `Install-VueOn.cmd` as administrator. The installer reuses the existing VueOn accounts. Do not reset Windows or delete the existing accounts.
 
 ## Step 3: Run the installer
 
