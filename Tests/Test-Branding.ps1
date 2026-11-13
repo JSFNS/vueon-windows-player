@@ -41,7 +41,7 @@ $launcher = Get-Content -LiteralPath (Join-Path $root 'Repair-VueOn-Branding.cmd
 
 if ($desktop -notmatch 'SystemParametersInfoW' -or
     $desktop -notmatch 'Test-VueOnDesktopWallpaper' -or
-    $desktop -notmatch 'Get-LastWin32Error') {
+    $desktop -notmatch 'GetLastWin32Error') {
     throw 'VueOn desktop wallpaper needs an explicit Windows API call and verification.'
 }
 if ($runtime -notmatch 'Update-VueOnUserBranding' -or
