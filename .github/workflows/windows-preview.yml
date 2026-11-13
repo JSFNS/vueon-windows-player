@@ -2,7 +2,6 @@ name: VueOn Windows Player Preview
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
