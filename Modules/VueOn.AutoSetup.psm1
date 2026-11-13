@@ -10,7 +10,7 @@ function Get-VueOnMicrosoftAutologon {
 
     $null = New-Item -Path $Destination -ItemType Directory -Force
     $zip = Join-Path $Destination 'Autologon.zip'
-    Invoke-WebRequest -UseBasicParsing -Uri 'https://download.sysinternals.com/files/Autologon.zip' -OutFile $zip -ErrorAction Stop
+    Invoke-WebRequest -UseBasicParsing -Uri 'https://download.sysinternals.com/files/AutoLogon.zip' -OutFile $zip -ErrorAction Stop
     Expand-Archive -LiteralPath $zip -DestinationPath $Destination -Force -ErrorAction Stop
     $exe = Join-Path $Destination 'Autologon64.exe'
     if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
