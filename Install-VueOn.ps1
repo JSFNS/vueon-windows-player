@@ -1,4 +1,4 @@
-# VueOn Windows Player Provisioner v0.1.6 (integrated autologon and branding)
+# VueOn Windows Player Provisioner v0.1.7 (desktop branding retry fix)
 # Intended for 64-bit Windows 11 Home/Pro using Windows PowerShell 5.1.
 # Must be reviewed and tested on a spare PC before customer deployment.
 #Requires -Version 5.1
@@ -11,7 +11,7 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$script:version = '0.1.6-preview'
+$script:version = '0.1.7-preview'
 $script:playerName = 'VueOnPlayer'
 $script:newPlayerPassword = $null
 $script:adminName = 'VueOnAdmin'
@@ -106,6 +106,7 @@ function Copy-PlayerFiles {
     foreach ($item in @(
         'Runtime\Start-VueOn.ps1',
         'Modules\VueOn.Branding.psm1',
+        'Modules\VueOn.Desktop.psm1',
         'Modules\VueOn.Autologon.psm1',
         'Modules\VueOn.Bios.psm1',
         'Modules\VueOn.Permissions.psm1',
@@ -114,6 +115,7 @@ function Copy-PlayerFiles {
         'Maintenance\Enter-Maintenance.ps1',
         'Maintenance\Exit-Maintenance.ps1',
         'Maintenance\Get-Status.ps1',
+        'Maintenance\Repair-Branding.ps1',
         'Maintenance\Uninstall-VueOn.ps1'
     )) {
         $src = Join-Path $PSScriptRoot $item
@@ -172,7 +174,7 @@ function Copy-PlayerFiles {
             New-VueOnBrandImage -Path $targetImage -Kind $asset.Kind
         }
     }
-    $script:report.DesktopBranding = 'VueOn wallpaper staged. Applied when VueOnPlayer first signs in.'
+    $script:report.DesktopBranding = 'Original VueOn wallpaper staged; applied and verified by the signed-in VueOnPlayer watchdog after Explorer starts (retries every 30 seconds).'
     $script:report.AccountPicture = Join-Path $script:installDir 'Branding\VueOn-Account.png'
     try {
         $lockImage = Join-Path $script:installDir 'Branding\VueOn-LockScreen.png'
@@ -303,6 +305,8 @@ try {
         Say 'Automatic login can be configured later using the official Microsoft utility.'
     }
     Say 'VueOn brand artwork is in C:\ProgramData\VueOnPlayer\Branding.'
+    Say 'Desktop wallpaper applies after Explorer starts. Use Windows+D to verify.'
+    Say 'For an existing player, run Repair-VueOn-Branding.cmd while signed in as VueOnPlayer.'
     Say 'Windows Pro/Home: choose the staged image in Settings > Personalization > Lock screen.'
     Say 'The account photo can be selected in Settings > Accounts > Your info.'
     if (-not $MigrateLegacyStartup) {

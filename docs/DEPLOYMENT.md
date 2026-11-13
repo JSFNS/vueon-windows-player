@@ -1,4 +1,4 @@
-# VueOn Windows Player - deployment and acceptance (v0.1.6 preview)
+# VueOn Windows Player - deployment and acceptance (v0.1.7 preview)
 
 ## Preconditions
 
@@ -71,3 +71,12 @@ Uninstall disables the VueOn startup task and VueOn-owned automatic login where 
 ## Preview limitations
 
 Needs full on-device boot/autologon/branding/TV pairing testing, signed distribution, robust browser heartbeat, hardware power recovery checks, and business security review before production.
+
+
+## Windows 11 branding repair on an existing player
+
+Do not reset Windows or change the existing working Autologon configuration. Download/extract a fresh v0.1.7 source ZIP and, **while signed in as VueOnPlayer**, double-click **Repair-VueOn-Branding.cmd** (no administrator elevation). This applies and verifies the per-user wallpaper using the Windows desktop API and copies the lock-screen/account images to the user Pictures folder.
+
+On Windows 11 Pro/Home, the lock-screen image is staged but requires a user selection under **Settings → Personalization → Lock screen**. Enable its sign-in-screen display toggle where available. Managed Pro requires its own Intune/Personalization CSP policy.
+
+The running viewer's 30-second branding check needs the v0.1.7 runtime. An existing v0.1.6 installation can still be fixed immediately using the standalone repair command without reinstalling.

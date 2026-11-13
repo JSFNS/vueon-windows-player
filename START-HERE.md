@@ -1,6 +1,6 @@
 # VueOn Windows Player: Installation Guide
 
-**Windows 11 Home or Pro | v0.1.6 preview (test devices only)**
+**Windows 11 Home or Pro | v0.1.7 preview (test devices only)**
 
 **You do not need ChatGPT or a GitHub account.** This installs VueOn on a spare Windows PC. It does not install Windows itself.
 
@@ -58,6 +58,22 @@ The installer includes **official VueOn artwork** (not generic placeholder art) 
 
 Managed Windows 11 Pro devices can instead use the supported **Intune/Personalization CSP** approach; this preview does not configure MDM automatically.
 
+### If Windows shows the wrong desktop background
+
+The player automatically retries its VueOn wallpaper after Windows Explorer starts. To fix an **already installed** v0.1.6 player without changing automatic login or pairing:
+
+1. Download and extract a **fresh ZIP** from the same public GitHub repository.
+2. Sign into Windows as **VueOnPlayer** (the user that the player automatically signs into).
+3. Close/minimise VueOn temporarily and double-click **Repair-VueOn-Branding.cmd** in the extracted folder. **Do not select Run as administrator.**
+4. Confirm the command window reports **SUCCESS**. Press **Windows+D** to view the desktop. The browser normally covers the wallpaper.
+5. The same command copies the two sign-in assets to your **Pictures\VueOn** folder for easy selection in Windows Settings.
+6. For Windows 11 Pro/Home, open **Settings → Personalization → Lock screen → Picture → Browse photos** and select **Pictures\VueOn\VueOn-LockScreen.png**. Where available, turn on **Show the lock screen background picture on the sign-in screen**.
+7. Select **Pictures\VueOn\VueOn-Account.png** from **Settings → Accounts → Your info** if you want the VueOn profile icon.
+
+**Important:** The lock/sign-in picture is still a manual choice on unmanaged Windows 11 Pro/Home. An automatic-login computer normally bypasses the sign-in screen at boot, so press Windows+L to verify the selected lock-screen picture.
+
+If the repair says FAILED, keep the error text and check the viewer log at `%LOCALAPPDATA%\VueOn\VueOn-Watchdog.log` while signed into VueOnPlayer. Do not reset Windows.
+
 ## 5. Restart and pair the screen
 
 1. Restart Windows.
@@ -88,7 +104,7 @@ For the final kiosk experience, also verify the physical monitor powers on after
 - Read the deployment report at **C:\ProgramData\VueOnPlayer\deployment-report.json**.
 - Never share passwords in email, screenshots or GitHub issues.
 
-**Status:** v0.1.6 is a hardware-testing preview. The complete startup, automatic login and pairing process must be tested on real hardware before production deployment.
+**Status:** v0.1.7 is a hardware-testing preview. The complete startup, automatic login and pairing process must be tested on real hardware before production deployment.
 
 Website: https://vueon.app
 

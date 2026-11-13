@@ -1,6 +1,6 @@
 # VueOn Windows Player
 
-**Public preview v0.1.6 for spare Windows 11 Home / Pro test PCs only. Not approved for production rollout.**
+**Public preview v0.1.7 for spare Windows 11 Home / Pro test PCs only. Not approved for production rollout.**
 
 Turn a Windows 11 PC into a VueOn signage player. The installer creates a dedicated standard user, installs the Edge viewer/watchdog, stages the **official VueOn artwork**, and **offers automatic Windows sign-in** using Microsoft's signed Sysinternals Autologon tool.
 
@@ -14,11 +14,13 @@ Turn a Windows 11 PC into a VueOn signage player. The installer creates a dedica
 
 **[Read the complete step-by-step installation guide](START-HERE.md)**, including Windows Home/Pro sign-in artwork limitations and troubleshooting.
 
+**Repair branding on an existing PC without reinstalling:** download/extract the latest ZIP, sign into **VueOnPlayer**, then double-click **Repair-VueOn-Branding.cmd**. It fixes only the current user's wallpaper and places the lock/account PNGs in Pictures\\VueOn for selection in Settings. Do **not** run this repair as administrator.
+
 ## Branding included
 
 The downloadable ZIP includes original VueOn imagery:
 
-- **Branding/VueOn-Wallpaper.png** → desktop wallpaper (automatically applied under VueOnPlayer).
+- **Branding/VueOn-Wallpaper.png** → desktop wallpaper (automatically applied and verified after the VueOnPlayer desktop loads; retried periodically if Windows changes it).
 - **Branding/VueOn-LockScreen.png** → branded Windows lock/sign-in background (automatically configured with a supported Enterprise/Education local policy; choose the image manually under Windows 11 Home/Pro, or deploy through Intune/CSP).
 - **Branding/VueOn-Account.png** → original VueOn icon for the player's Windows account photo (select in **Settings → Accounts → Your info**).
 
@@ -42,4 +44,4 @@ Files are copied to **C:\ProgramData\VueOnPlayer\Branding**. Existing custom art
 - **[Deployment checks and recovery](docs/DEPLOYMENT.md)**
 - **[Microsoft Autologon documentation](https://learn.microsoft.com/en-us/sysinternals/downloads/autologon)**
 
-The CI build checks PowerShell syntax, ACL recovery, official image assets, local password verification, and the downloaded Microsoft Autologon signature. These tests cannot prove a particular physical PC will boot and pair correctly. Verify on spare hardware before any customer deployment.
+The CI build checks PowerShell syntax, ACL recovery, original image assets, wallpaper runtime/repair wiring, local password verification, and the downloaded Microsoft Autologon signature. These tests cannot prove a particular physical PC will boot and pair correctly. Verify on spare hardware before any customer deployment.
