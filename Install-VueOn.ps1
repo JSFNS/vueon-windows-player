@@ -1,4 +1,4 @@
-# VueOn Windows Player Provisioner v0.1.4 (manual account sign-in first)
+# VueOn Windows Player Provisioner v0.1.5 (fresh Windows Winlogon registry fix)
 # Intended for 64-bit Windows 11 Home/Pro using Windows PowerShell 5.1.
 # Must be reviewed and tested on a spare PC before customer deployment.
 #Requires -Version 5.1
@@ -11,7 +11,7 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$script:version = '0.1.4-preview'
+$script:version = '0.1.5-preview'
 $script:playerName = 'VueOnPlayer'
 $script:newPlayerPassword = $null
 $script:adminName = 'VueOnAdmin'
@@ -208,11 +208,10 @@ function Enable-UnattendedLogin {
     # VueOnPlayer and verifying the password and full-screen viewer.
     $script:report.AutoLogon = 'Intentionally deferred: verify manual VueOnPlayer login first'
     $script:report.Notes += 'Automatic sign-in is disabled in this preview. Configure Microsoft Sysinternals Autologon separately after manually verifying the player account.'
-    $winlogon = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
-    $currentUser = Get-ItemPropertyValue -Path $winlogon -Name 'DefaultUserName' -ErrorAction SilentlyContinue
-    $currentAuto = Get-ItemPropertyValue -Path $winlogon -Name 'AutoAdminLogon' -ErrorAction SilentlyContinue
-    if ($currentUser -ieq $script:playerName -and $currentAuto -eq '1') {
-        Set-ItemProperty -Path $winlogon -Name 'AutoAdminLogon' -Value '0'
+    # Fresh Windows 11 installations may have no DefaultUserName/AutoAdminLogon.
+    # A missing optional registry value is normal and must not abort provisioning.
+    Import-Module (Join-Path $script:installDir 'Modules\VueOn.Autologon.psm1') -Force -ErrorAction Stop
+    if (Disable-VueOnPreviewAutoLogon -UserName $script:playerName) {
         $script:report.Notes += 'Existing VueOnPlayer automatic login disabled for manual verification.'
     }
 }
