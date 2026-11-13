@@ -30,6 +30,37 @@ try {
         } finally { $test.Dispose() }
     }
     Write-Host 'Fallback branding generator tests passed.'
+
+# Static Windows desktop tests. A CI service account cannot impersonate
+# the interactive VueOnPlayer desktop; verify the actual image after reboot.
+$desktop = Get-Content -LiteralPath (Join-Path $root 'Modules\VueOn.Desktop.psm1') -Raw
+$runtime = Get-Content -LiteralPath (Join-Path $root 'Runtime\Start-VueOn.ps1') -Raw
+$installer = Get-Content -LiteralPath (Join-Path $root 'Install-VueOn.ps1') -Raw
+$repair = Get-Content -LiteralPath (Join-Path $root 'Maintenance\Repair-Branding.ps1') -Raw
+$launcher = Get-Content -LiteralPath (Join-Path $root 'Repair-VueOn-Branding.cmd') -Raw
+
+if ($desktop -notmatch 'SystemParametersInfoW' -or
+    $desktop -notmatch 'Test-VueOnDesktopWallpaper' -or
+    $desktop -notmatch 'Get-LastWin32Error') {
+    throw 'VueOn desktop wallpaper needs an explicit Windows API call and verification.'
+}
+if ($runtime -notmatch 'Update-VueOnUserBranding' -or
+    $runtime -notmatch 'Get-Process -Name .explorer.' -or
+    $runtime -notmatch 'TotalSeconds -ge 30') {
+    throw 'Watchdog must apply wallpaper after Explorer starts, and retry periodically.'
+}
+if ($installer -notmatch 'Modules\\VueOn.Desktop.psm1' -or
+    $installer -notmatch 'Maintenance\\Repair-Branding.ps1') {
+    throw 'Installer must deploy the branding module and non-destructive repair script.'
+}
+if ($repair -notmatch 'VueOnPlayer' -or
+    $repair -match 'Enable-VueOnAutoLogon|Disable-VueOnAutoLogon|New-LocalUser|Remove-LocalUser') {
+    throw 'Repair must run only in VueOnPlayer session and must not touch Windows accounts or autologon.'
+}
+if ($launcher -notmatch 'Maintenance\\Repair-Branding.ps1') {
+    throw 'The one-click branding repair launcher is missing its script target.'
+}
+Write-Host 'Desktop wallpaper recovery and installer regression checks passed.'
 } finally {
     if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Recurse -Force }
 }
