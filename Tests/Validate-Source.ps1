@@ -56,4 +56,15 @@ if ($batch -notmatch '\-SkipAutoLogon' -or $batch -match '\-ConfigureBios|\-Enab
 if ($installer -notmatch 'Intentionally deferred: verify manual VueOnPlayer login first') {
     throw 'Installer must require manual VueOnPlayer sign-in before enabling autologon.'
 }
+# Fresh Windows 11 regression: Winlogon DefaultUserName may not be present.
+if ($installer -match "Get-ItemPropertyValue\s+-Path\s+\$winlogon\s+-Name\s+'DefaultUserName'") {
+    throw 'Do not call Get-ItemPropertyValue on optional fresh-Windows Winlogon values.'
+}
+if ($installer -notmatch 'Disable-VueOnPreviewAutoLogon') {
+    throw 'First-stage install must safely handle missing Winlogon properties.'
+}
+$autologon = Get-Content -LiteralPath (Join-Path $root 'Modules\VueOn.Autologon.psm1') -Raw
+if ($autologon -notmatch "PSObject\.Properties\['DefaultUserName'\]") {
+    throw 'Optional DefaultUserName property should be checked before reading its value.'
+}
 Write-Host 'All static checks passed.'
