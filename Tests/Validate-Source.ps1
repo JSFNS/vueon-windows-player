@@ -57,7 +57,7 @@ if ($installer -notmatch 'Intentionally deferred: verify manual VueOnPlayer logi
     throw 'Installer must require manual VueOnPlayer sign-in before enabling autologon.'
 }
 # Fresh Windows 11 regression: Winlogon DefaultUserName may not be present.
-if ($installer -match "Get-ItemPropertyValue\s+-Path\s+\$winlogon\s+-Name\s+'DefaultUserName'") {
+if ($installer -match 'Get-ItemPropertyValue\s+-Path\s+\$winlogon\s+-Name\s+''DefaultUserName''') {
     throw 'Do not call Get-ItemPropertyValue on optional fresh-Windows Winlogon values.'
 }
 if ($installer -notmatch 'Disable-VueOnPreviewAutoLogon') {
