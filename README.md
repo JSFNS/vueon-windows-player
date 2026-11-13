@@ -1,6 +1,6 @@
 # VueOn Windows Player
 
-**Public preview v0.1.4 for TEST PCs only. Not approved for customer production deployment.**
+**Public preview v0.1.5 for TEST PCs only. Not approved for customer production deployment.** Fresh Windows 11 Pro/ Home installations with missing Winlogon username values are supported; automatic Windows login remains a separate, manually validated step.
 
 Turn a spare Windows 11 Home or Pro computer into a VueOn signage player. The viewer starts Microsoft Edge full-screen at `https://portal.vueon.app/pair/`, remembers its pairing in a persistent browser profile, applies a VueOn loading wallpaper and checks every five seconds whether the viewer needs relaunching.
 
@@ -28,6 +28,8 @@ Turn a spare Windows 11 Home or Pro computer into a VueOn signage player. The vi
 - Is **not a secure locked-down kiosk** on Windows Home; physically protect test devices.
 
 Windows itself must first be installed and connected to a network. For real deployments, also verify Windows activation, monitor auto-power, power-outage recovery and support arrangements.
+
+**Dell BIOS notice:** `Install Dell Command Configure manually` is advisory for optional recovery after power loss. It does not block normal VueOn playback.
 
 ## Development status
 
