@@ -108,4 +108,31 @@ function Disable-VueOnAutoLogon {
     [VueOn.LsaSecret]::DeletePassword()
     return $true
 }
-Export-ModuleMember -Function Enable-VueOnAutoLogon, Disable-VueOnAutoLogon
+# Preview helper: Windows Winlogon can omit DefaultUserName on a clean install.
+# Read the REGISTRY KEY first, then access OPTIONAL values through PSObject so
+# Set-StrictMode doesn't throw PropertyNotFoundException. Never create autologon.
+function Disable-VueOnPreviewAutoLogon {
+    [CmdletBinding()]
+    param(
+        [string]$UserName = 'VueOnPlayer',
+        [string]$ComputerName = $env:COMPUTERNAME,
+        [string]$RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
+    )
+
+    $values = Get-ItemProperty -LiteralPath $RegistryPath -ErrorAction Stop
+    $user = $values.PSObject.Properties['DefaultUserName']
+    $enabled = $values.PSObject.Properties['AutoAdminLogon']
+    $domain = $values.PSObject.Properties['DefaultDomainName']
+    if ($null -eq $user -or $null -eq $enabled) { return $false }
+    if ([string]$user.Value -ine $UserName -or [string]$enabled.Value -ne '1') {
+        return $false
+    }
+    # Do not modify an unrelated domain account that happens to share a name.
+    if ($null -ne $domain -and [string]$domain.Value -ine $ComputerName) {
+        return $false
+    }
+    Set-ItemProperty -LiteralPath $RegistryPath -Name 'AutoAdminLogon' -Value '0' -ErrorAction Stop
+    return $true
+}
+
+Export-ModuleMember -Function Enable-VueOnAutoLogon, Disable-VueOnAutoLogon, Disable-VueOnPreviewAutoLogon
